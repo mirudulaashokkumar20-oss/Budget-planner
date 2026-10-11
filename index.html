@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Budget Planner — set a monthly budget, track income and expenses, and understand where your money goes.">
+  <meta name="theme-color" content="#f5f6fb">
+  <title>Budget Planner — Personal Finance Tracker</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Apply saved theme before paint to avoid a flash -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('budgetPlanner.theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', saved || (prefersDark ? 'dark' : 'light'));
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <div class="bg-decor" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <!-- ================= TOP BAR ================= -->
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#" aria-label="Budget Planner home">
+        <span class="brand-mark" aria-hidden="true">₹</span>
+        <span class="brand-text"><strong>Budget</strong>Planner</span>
+      </a>
+
+      <div class="month-nav" role="group" aria-label="Change month">
+        <button type="button" class="icon-btn" id="prevMonthBtn" aria-label="Previous month" title="Previous month (←)">
+          <svg class="i" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="month-label" id="monthLabelBtn" title="Jump to current month">
+          <svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span id="monthLabel">Month</span>
+        </button>
+        <button type="button" class="icon-btn" id="nextMonthBtn" aria-label="Next month" title="Next month (→)">
+          <svg class="i" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" class="icon-btn" id="exportBtn" aria-label="Export transactions as CSV" title="Export CSV">
+          <svg class="i" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+        </button>
+        <button type="button" class="icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <svg class="i icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="i icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <button type="button" class="icon-btn icon-btn-danger" id="resetBtn" aria-label="Reset all data" title="Reset all data">
+          <svg class="i" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+
+    <!-- ================= HERO ================= -->
+    <section class="hero reveal" aria-labelledby="heroTitle">
+      <div class="hero-content">
+        <p class="eyebrow" id="greeting">Welcome back</p>
+        <h1 class="hero-label" id="heroTitle">Remaining budget · <span id="heroMonth"></span></h1>
+        <p class="hero-amount" id="remainingValue">₹0.00</p>
+        <div class="hero-meta">
+          <span class="status-chip is-none" id="statusChip"><i aria-hidden="true"></i><span id="statusText">No budget set</span></span>
+        </div>
+        <p class="hero-text" id="progressText">Set a monthly budget to start tracking your spending.</p>
+      </div>
+
+      <div class="hero-ring" id="ringWrap" role="progressbar" aria-label="Budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="ring-center">
+          <strong id="ringPercent">0%</strong>
+          <small>of budget used</small>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= STATS ================= -->
+    <section class="stats" aria-label="Monthly summary">
+      <article class="stat-card reveal" data-tone="primary" style="--d: 60ms">
+        <div class="stat-top">
+          <span class="stat-label">Monthly budget</span>
+          <span class="stat-icon" aria-hidden="true">
+            <svg class="i" viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+          </span>
+        </div>
+        <p class="stat-value" id="budgetValue">₹0.00</p>
+        <p class="stat-foot" id="budgetFoot">Not set yet</p>
+      </article>
+
+      <article class="stat-card reveal" data-tone="income" style="--d: 120ms">
+        <div class="stat-top">
+          <span class="stat-label">Total income</span>
+          <span class="stat-icon" aria-hidden="true">
+            <svg class="i" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg>
+          </span>
+        </div>
+        <p class="stat-value" id="incomeValue">₹0.00</p>
+        <p class="stat-foot" id="incomeCount">0 entries</p>
+      </article>
+
+      <article class="stat-card reveal" data-tone="expense" style="--d: 180ms">
+        <div class="stat-top">
+          <span class="stat-label">Total expenses</span>
+          <span class="stat-icon" aria-hidden="true">
+            <svg class="i" viewBox="0 0 24 24"><path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/></svg>
+          </span>
+        </div>
+        <p class="stat-value" id="expenseValue">₹0.00</p>
+        <p class="stat-foot" id="expenseCount">0 entries</p>
+      </article>
+
+      <article class="stat-card reveal" data-tone="info" style="--d: 240ms">
+        <div class="stat-top">
+          <span class="stat-label">Net balance</span>
+          <span class="stat-icon" aria-hidden="true">
+            <svg class="i" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          </span>
+        </div>
+        <p class="stat-value" id="balanceValue">₹0.00</p>
+        <p class="stat-foot">Income minus expenses</p>
+      </article>
+    </section>
+
+    <!-- ================= CONTENT GRID ================= -->
+    <div class="grid">
+
+      <!-- ---------- Left column ---------- -->
+      <div class="col-side">
+
+        <section class="card reveal" style="--d: 300ms" aria-labelledby="budgetTitle">
+          <header class="card-head">
+            <div>
+              <h2 id="budgetTitle">Monthly budget</h2>
+              <p class="card-sub">Spending limit for <span id="budgetMonthLabel"></span></p>
+            </div>
+          </header>
+          <form id="budgetForm" class="budget-form" novalidate>
+            <div class="input-money">
+              <span aria-hidden="true">₹</span>
+              <input type="number" id="budgetInput" inputmode="decimal" min="0" step="0.01" placeholder="Enter amount" aria-label="Budget amount in rupees">
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </form>
+          <button type="button" class="link-btn hidden" id="copyBudgetBtn"></button>
+        </section>
+
+        <section class="card form-card reveal" id="txFormCard" style="--d: 360ms" aria-labelledby="formTitle">
+          <header class="card-head">
+            <div>
+              <h2 id="formTitle">Add transaction</h2>
+              <p class="card-sub" id="formSub">Record income or an expense</p>
+            </div>
+          </header>
+
+          <form id="transactionForm" class="form" novalidate>
+            <div class="segmented" role="radiogroup" aria-label="Transaction type">
+              <input type="radio" name="type" id="typeExpense" value="expense" checked>
+              <label for="typeExpense">Expense</label>
+              <input type="radio" name="type" id="typeIncome" value="income">
+              <label for="typeIncome">Income</label>
+              <span class="segmented-indicator" aria-hidden="true"></span>
+            </div>
+
+            <div class="field">
+              <label for="amountInput">Amount</label>
+              <div class="input-money input-lg">
+                <span aria-hidden="true">₹</span>
+                <input type="number" id="amountInput" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+              </div>
+            </div>
+
+            <fieldset class="field">
+              <legend>Category</legend>
+              <div class="chip-grid" id="categoryChips"></div>
+            </fieldset>
+
+            <div class="field-row">
+              <div class="field">
+                <label for="descInput">Description <span class="optional">· optional</span></label>
+                <input type="text" id="descInput" maxlength="60" placeholder="e.g. Weekly groceries" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="dateInput">Date</label>
+                <input type="date" id="dateInput">
+              </div>
+            </div>
+
+            <p class="form-error" id="formError" role="alert"></p>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                <span id="submitLabel">Add expense</span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-lg hidden" id="cancelEditBtn">Cancel</button>
+            </div>
+            <p class="shortcut-hint">Tip: press <kbd>N</kbd> for a new entry, <kbd>/</kbd> to search, <kbd>←</kbd> <kbd>→</kbd> to change month.</p>
+          </form>
+        </section>
+      </div>
+
+      <!-- ---------- Right column ---------- -->
+      <div class="col-main">
+
+        <section class="card reveal" style="--d: 420ms" aria-labelledby="breakdownTitle">
+          <header class="card-head">
+            <div>
+              <h2 id="breakdownTitle">Spending breakdown</h2>
+              <p class="card-sub">Where your money went this month</p>
+            </div>
+          </header>
+
+          <div class="breakdown hidden" id="breakdown">
+            <div class="donut-wrap">
+              <svg class="donut" id="donut" viewBox="0 0 42 42" role="img" aria-label="Expenses by category"></svg>
+              <div class="donut-center">
+                <small>Spent</small>
+                <strong id="donutTotal">₹0</strong>
+              </div>
+            </div>
+            <ul class="legend" id="categoryList"></ul>
+          </div>
+
+          <div class="empty" id="categoryEmpty">
+            <div class="empty-icon" aria-hidden="true">
+              <svg class="i" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            </div>
+            <p class="empty-title">No expenses yet</p>
+            <p class="empty-text">Add an expense to see where your money goes.</p>
+          </div>
+        </section>
+
+        <section class="card reveal" style="--d: 480ms" aria-labelledby="txTitle">
+          <header class="card-head">
+            <div>
+              <h2 id="txTitle">Transactions</h2>
+              <p class="card-sub"><span id="txCount">0</span> shown</p>
+            </div>
+            <button type="button" class="link-btn hidden" id="clearFiltersBtn">Clear filters</button>
+          </header>
+
+          <div class="toolbar">
+            <div class="search">
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="search" id="searchInput" placeholder="Search transactions" aria-label="Search transactions" autocomplete="off">
+              <kbd aria-hidden="true">/</kbd>
+            </div>
+
+            <div class="segmented segmented-sm segmented-3" role="radiogroup" aria-label="Filter by type">
+              <input type="radio" name="filterType" id="filterAll" value="all" checked>
+              <label for="filterAll">All</label>
+              <input type="radio" name="filterType" id="filterIncome" value="income">
+              <label for="filterIncome">Income</label>
+              <input type="radio" name="filterType" id="filterExpense" value="expense">
+              <label for="filterExpense">Expense</label>
+              <span class="segmented-indicator" aria-hidden="true"></span>
+            </div>
+
+            <select id="filterCategory" class="select" aria-label="Filter by category"></select>
+          </div>
+
+          <div class="tx-groups" id="txList"></div>
+
+          <div class="empty" id="txEmpty">
+            <div class="empty-icon" aria-hidden="true">
+              <svg class="i" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8H8M16 12H8M13 16H8"/></svg>
+            </div>
+            <p class="empty-title" id="txEmptyTitle">No transactions yet</p>
+            <p class="empty-text" id="txEmptyText">Add your first transaction to get started.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Your data stays private. It is stored only in this browser.
+    </p>
+  </footer>
+
+  <!-- Floating add button (mobile) -->
+  <button type="button" class="fab" id="fabBtn" aria-label="Add transaction">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <!-- Confirm dialog -->
+  <div class="modal" id="confirmModal" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-cancel></div>
+    <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalMessage">
+      <div class="modal-icon" aria-hidden="true">
+        <svg class="i" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </div>
+      <h3 id="modalTitle">Are you sure?</h3>
+      <p id="modalMessage"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="modalCancel" data-modal-cancel>Cancel</button>
+        <button type="button" class="btn btn-danger" id="modalConfirm" data-modal-confirm>Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
